@@ -74,10 +74,31 @@ public class Dude {
             }
         } else {
             // Sinon, on a des intentions de jets de cailloux
-            e.throwRock(intentions.value.remove(0));
+            char c = intentions.value.remove(0);
+            e.throwRock(c);
             s.smell();
+            // Si on a tué le monstre
             if ((knowledge[x][y] & Constants.SMELLY) == 0) {
                 intentions = new Pair<>(new LinkedList<>(), new LinkedList<>());
+                // On marque que la case ne contient plus de monstre et qu'elle ne pouvait pas contenir de crevasse
+                switch (c){
+                    case 'n':
+                        possibilities[x-1][y][0] = false;
+                        possibilities[x-1][y][1] = false;
+                        break;
+                    case 's':
+                        possibilities[x+1][y][0] = false;
+                        possibilities[x+1][y][1] = false;
+                        break;
+                    case 'w':
+                        possibilities[x][y-1][0] = false;
+                        possibilities[x][y-1][1] = false;
+                        break;
+                    case 'e':
+                        possibilities[x][y+1][0] = false;
+                        possibilities[x][y+1][1] = false;
+                        break;
+                }
             }
             return false;
         }
