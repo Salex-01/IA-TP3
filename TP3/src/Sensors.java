@@ -6,18 +6,19 @@ public class Sensors {
     }
 
     public void smell() {
-        d.knowledges[d.x][d.y] |= (Main.e.map[d.x][d.y] & Constants.SMELLY);
+        d.knowledge[d.x][d.y] = (d.knowledge[d.x][d.y] & ~Constants.SMELLY) | (Main.e.map[d.x][d.y] & Constants.SMELLY);
     }
 
     public void wind() {
-        d.knowledges[d.x][d.y] |= (Main.e.map[d.x][d.y] & Constants.WINDY);
+        d.knowledge[d.x][d.y] = (d.knowledge[d.x][d.y] & ~Constants.WINDY) | (Main.e.map[d.x][d.y] & Constants.WINDY);
     }
 
     public void light() {
-        d.knowledges[d.x][d.y] |= (Main.e.map[d.x][d.y] & Constants.PORTAL);
+        d.knowledge[d.x][d.y] = (d.knowledge[d.x][d.y] & ~Constants.PORTAL) | (Main.e.map[d.x][d.y] & Constants.PORTAL);
     }
 
     public void all() {
+        d.knowledge[d.x][d.y] = 0;
         smell();
         wind();
         light();

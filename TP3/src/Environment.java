@@ -17,7 +17,7 @@ public class Environment {
             do {
                 x = r.nextInt(size);
                 y = r.nextInt(size);
-            } while (((map[x][y] & (Constants.CREVASSE | Constants.MONSTER)) != 0) || (x == px && y == py));
+            } while (((map[x][y] & (Constants.CREVASSE | Constants.MONSTER | Constants.PORTAL)) != 0) || (x == px && y == py));
             map[x][y] = Constants.MONSTER;
             if (x > 0) {
                 map[x - 1][y] |= Constants.SMELLY;
@@ -34,7 +34,7 @@ public class Environment {
             do {
                 x = r.nextInt(size);
                 y = r.nextInt(size);
-            } while (((map[x][y] & (Constants.CREVASSE | Constants.MONSTER)) != 0) || (x == px && y == py));
+            } while (((map[x][y] & (Constants.CREVASSE | Constants.MONSTER | Constants.PORTAL)) != 0) || (x == px && y == py));
             map[x][y] = Constants.CREVASSE;
             if (x > 0) {
                 map[x - 1][y] |= Constants.WINDY;

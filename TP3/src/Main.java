@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 
 public class Main {
@@ -37,13 +38,19 @@ public class Main {
             }
         }
         Constants.COMPLETION = 10 * size * size;
+        if (initX < 0 || initX > size) {
+            initX = new Random().nextInt(size);
+        }
+        if (initY < 0 || initY > size) {
+            initY = new Random().nextInt(size);
+        }
         e.build(size, initX, initY);
         Frame f = null;
         Button b = null;
-        Semaphore s = null;
+        Semaphore s = new Semaphore(0);
+        GraphicThread gt = new GraphicThread(size);
         if (showWindow) {
             Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-            s = new Semaphore(0);
             f = new Frame();
             f.setBounds((int) (d.getWidth() * 0.1), (int) (d.getHeight() * 0.1), (int) (d.getWidth() * 0.8), (int) (d.getHeight() * 0.8));
             f.addWindowListener(new CloserListener(f, s));
@@ -57,15 +64,28 @@ public class Main {
             c.add(b);
             f.add(c);
             f.setVisible(true);
+            Canvas c1 = new Canvas();
+            c1.setBounds(250, 50, (int) (d.getWidth() * 0.8 - 300), (int) (d.getHeight() * 0.8 - 100));
+            c1.setVisible(true);
+            c.add(c1);
+            gt.setCanvas(c1);
         }
         Dude d = new Dude(size, initX, initY, showWindow, f, death);
         if (showWindow) {
+            gt.setDude(d);
+            gt.start();
             b.addActionListener(event -> {
-                if (d.doSomething()) {
-                    e.build(d.mapSize, d.x, d.y);
+                try {
+                    if (d.doSomething()) {
+                        System.out.println("Score " + d.score);
+                        e.build(d.mapSize, d.x, d.y);
+                    }
+                } catch (DeadException deadException) {
+                    s.release(1);
                 }
             });
             s.acquire(1);
+            gt.sstop();
         } else {
             int a;
             while (true) {
@@ -75,12 +95,16 @@ public class Main {
                     if (a > 1) {
                         break;
                     }
-                    if (d.doSomething()) {
-                        e.build(d.mapSize, d.x, d.y);
+                    try {
+                        if (d.doSomething()) {
+                            e.build(d.mapSize, d.x, d.y);
+                        }
+                    } catch (DeadException deadException) {
+                        break;
                     }
                 }
             }
         }
-        System.out.println("Score : " + d.score);
+        System.out.println("Final score : " + d.score);
     }
 }
