@@ -12,6 +12,7 @@ public class Main {
         int initY = -1;
         boolean showWindow = true;
         boolean death = false;
+        // On parse les paramètres
         for (int i = 0; i < args.length; i += 2) {
             String s = args[i].toLowerCase();
             switch (s) {
@@ -44,11 +45,13 @@ public class Main {
         if (initY < 0 || initY > size) {
             initY = new Random().nextInt(size);
         }
+        // Création de la première carte
         e.build(size, initX, initY);
         Frame f = null;
         Button b = null;
         Semaphore s = new Semaphore(0);
         GraphicThread gt = new GraphicThread(size);
+        //Préparation de l'affichage graphique
         if (showWindow) {
             Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
             f = new Frame();
@@ -70,6 +73,7 @@ public class Main {
             c.add(c1);
             gt.setCanvas(c1);
         }
+        //Création du Dude
         Dude d = new Dude(size, initX, initY, showWindow, f, death);
         if (showWindow) {
             gt.setDude(d);

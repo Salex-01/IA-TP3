@@ -8,11 +8,13 @@ public class Environment {
         Random r = new Random();
         int x;
         int y;
+        // On place d'abord le portail n'importe où sauf sur le Dude
         do {
             x = r.nextInt(size);
             y = r.nextInt(size);
         } while (x == px && y == py);
         map[x][y] = Constants.PORTAL;
+        // Ensuite on place les monstres et les crevasses n'importe où sauf sur le Dude et le portail
         for (int i = 0; i < (size - 1) / 2; i++) {
             do {
                 x = r.nextInt(size);

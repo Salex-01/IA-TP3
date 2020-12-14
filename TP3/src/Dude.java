@@ -15,10 +15,10 @@ public class Dude {
 
     int score = 0;
 
-    int[][] knowledge;
-    boolean[][] explored;
-    boolean[][][] possibilities;
-    Pair<LinkedList<Character>, LinkedList<Character>> intentions;
+    int[][] knowledge;  // Ce que le Dude sait de l'environnement
+    boolean[][] explored;   // Dit pour chaque case si elle a déjà été explorée
+    boolean[][][] possibilities;    // Dit pour chaque case si elle peut contenir un monstre ou une crevasse
+    Pair<LinkedList<Character>, LinkedList<Character>> intentions;  // Liste des intentions pas encore exécutées (pour ne pas recalculer à chaque fois)
 
     public Dude(int size, int iX, int iY, boolean showWindow, Frame f1, boolean d) {
         Random r = new Random();
@@ -40,22 +40,40 @@ public class Dude {
     }
 
     public boolean doSomething() throws DeadException {
-        System.out.println("Stepping");
+        // Si on a plus d'instructions à exécuter
         if (intentions.key.size() == 0 && (intentions.value == null || intentions.value.size() == 0)) {
+            // Utiliser tous les capteurs
             s.all();
+            // Si on a trouvé le portail
             if ((knowledge[x][y] & Constants.PORTAL) != 0) {
                 System.out.println("Exit");
                 return e.exit();
             }
+            // Sinon, on met à jour les possibilités de présence de monstres et de crevasses
             updatePossibilities();
+            // On cherche à explorer une case pas encore visitée dont on sait qu'elle est sans danger
             intentions = findPathToNewSafe();
+            // Si il n'y a pas de telle case
             if (intentions.key == null) {
+                // Si on connait une case adjacente à un monstre, on va sur cette case
+                // et on jette des cailloux sur les cases autour où le monstre pourrait se trouvern par ordre de probabilité décroissante
+                // jusqu'à la mort du monstre
+                // Sinon on essaye d'avancer sur une case adjacente à une case venteuse
+                // en choisissant la case où la probabilité de trouver une crevasse est la plus faible
+                // Ce dernier cas est le seul où le Dude peut mourir, si on choisit la mauvaise case
                 intentions = determineActions();
             }
         }
+        // Si on a des intentions de déplacement
         if (intentions.key.size() > 0) {
-            return e.move(intentions.key.remove(0));
+            if(e.move(intentions.key.remove(0))){
+                System.out.println("Dead");
+                return true;
+            }else{
+                return false;
+            }
         } else {
+            // Sinon, on a des intentions de jets de cailloux
             e.throwRock(intentions.value.remove(0));
             s.smell();
             if ((knowledge[x][y] & Constants.SMELLY) == 0) {
@@ -65,14 +83,18 @@ public class Dude {
         }
     }
 
+    // Détermine les actions à effectuer quand on ne connait pas de case non explorée sans danger
     private Pair<LinkedList<Character>, LinkedList<Character>> determineActions() {
         LinkedList<Character> path = null;
         int fx = 0;
         int fy = 0;
         LinkedList<Character> tmp;
+        // Calcule pour chaque case le nombre d'autres cases dont la contrainte de monstre/crevasse à proximité
+        // serait satisfaite si cette case contenait effectivement le monstre ou la crevasse
         int[][][] chances = computeProbabilities();
         int i;
         int j;
+        // On cherche d'abord à trouver une case voisine d'un monstre pour lui jeter des cailloux sans prendre de risques
         for (i = 0; i < mapSize; i++) {
             for (j = 0; j < mapSize; j++) {
                 if ((knowledge[i][j] & Constants.SMELLY) != 0) {
@@ -85,8 +107,10 @@ public class Dude {
                 }
             }
         }
+        // Si on a trouvé une telle case
         if (path != null) {
             LinkedList<Pair<Character, Integer>> sorter = new LinkedList<>();
+            // On ajoute les jets de cailloux vers les cases dans lesquelles le monstre a une chance de se trouver
             if (fx > 0 && chances[fx - 1][fy][0] > 0) {
                 sorter.add(new Pair<>('n', chances[fx - 1][fy][0]));
             }
@@ -99,6 +123,7 @@ public class Dude {
             if (fy < mapSize - 1 && chances[fx][fy + 1][0] > 0) {
                 sorter.add(new Pair<>('e', chances[fx][fy + 1][0]));
             }
+            // On trie les jets par probabilités de succès décroissantes
             sorter.sort((o1, o2) -> o2.value - o1.value);
             LinkedList<Character> rocks = new LinkedList<>();
             for (Pair<Character, Integer> p : sorter) {
@@ -106,12 +131,15 @@ public class Dude {
             }
             return new Pair<>(path, rocks);
         } else {
+            // Si on a pas trouvé de case proche d'un monstre
             LinkedList<Character> testPath;
             int bv = Integer.MAX_VALUE;
             for (i = 0; i < mapSize; i++) {
                 for (j = 0; j < mapSize; j++) {
                     if ((chances[i][j][1] > 0 && chances[i][j][1] <= bv)) {
+                        // On calcule le chemin vers une case adjactente à une case venteuse
                         testPath = floodPath(i, j);
+                        // Et on le garde si il est moins dangereux que le précédent ou si il est plus court pour le même risque
                         if (path == null || chances[i][j][1] < bv || (testPath != null && chances[i][j][1] <= bv && testPath.size() < path.size())) {
                             path = testPath;
                         }
@@ -123,6 +151,8 @@ public class Dude {
         }
     }
 
+    // Calcule pour chaque case le nombre d'autres cases dont la contrainte de monstre/crevasse à proximité
+    // serait satisfaite si cette case contenait effectivement le monstre ou la crevasse
     private int[][][] computeProbabilities() {
         int[][][] probabilities = new int[mapSize][mapSize][2];
         for (int i = 0; i < mapSize; i++) {
@@ -176,6 +206,7 @@ public class Dude {
         return probabilities;
     }
 
+    // Cherche simplement la case non explorée et sans danger la plus proche et retourne le chemin pour y aller
     private Pair<LinkedList<Character>, LinkedList<Character>> findPathToNewSafe() {
         LinkedList<Character> res = null;
         LinkedList<Character> tmp;
@@ -192,6 +223,8 @@ public class Dude {
         return new Pair<>(res, null);
     }
 
+    // Algorithme de pathfinding par inondation. Pas le plus efficace mais largement suffisant tant que la carte fait moins de 500 cases de côté
+    // Celui-ci génère des chemins ne passant que par des cases sans danger
     private LinkedList<Character> floodPath(int i, int j) {
         int[][] flood = new int[mapSize][mapSize];
         flood[i][j] = 1;
@@ -256,6 +289,7 @@ public class Dude {
         return null;
     }
 
+    // Utilise les connaissances données par les capteurs pour déterminer si les cases non explorées peuvent contenir des monstres ou crevasses.
     private void updatePossibilities() {
         for (int i = 0; i < mapSize; i++) {
             for (int j = 0; j < mapSize; j++) {
@@ -269,6 +303,7 @@ public class Dude {
         }
     }
 
+    // Pour dire facilement que toutes les cases autour d'une case donnée ne peuvent pas contenir de monstre/crevasse
     private void safeAround(int i, int j, int type) {
         int index;
         switch (type) {
@@ -296,6 +331,7 @@ public class Dude {
         }
     }
 
+    // Réinitialise l'état mental du Dude (quand on arrive dans un nouveau niveau)
     public void resetMental() {
         knowledge = new int[mapSize][mapSize];
         explored = new boolean[mapSize][mapSize];
