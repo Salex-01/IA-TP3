@@ -87,6 +87,7 @@ public class Main {
             s.acquire(1);
             gt.sstop();
         } else {
+            consoleGraphics(size, d);
             int a;
             while (true) {
                 if (System.in.available() > 0) {
@@ -102,9 +103,21 @@ public class Main {
                     } catch (DeadException deadException) {
                         break;
                     }
+                    consoleGraphics(size, d);
                 }
             }
         }
         System.out.println("Final score : " + d.score);
+    }
+
+    private static void consoleGraphics(int size, Dude d) {
+        System.out.println("####".repeat(size)+"#");
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                System.out.print("#"+((e.map[i][j]&Constants.MONSTER)!=0?"M":((e.map[i][j]&Constants.CREVASSE)!=0?"C":((e.map[i][j]&Constants.PORTAL)!=0?"P":" ")))+" "+(i==d.x&&j==d.y?"D":" "));
+            }
+            System.out.println("#");
+            System.out.println("####".repeat(size)+"#");
+        }
     }
 }
